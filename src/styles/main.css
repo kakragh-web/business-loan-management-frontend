@@ -262,6 +262,15 @@ main {
   color: white;
 }
 
+.btn-danger {
+  color: var(--error-color);
+}
+
+.btn-danger:hover {
+  background: var(--error-color);
+  color: white;
+}
+
 /* Stats Cards */
 .stats {
   display: grid;

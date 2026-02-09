@@ -39,6 +39,18 @@ export default function Customers() {
     }
   };
 
+  const deleteCustomer = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this customer?")) return;
+
+    try {
+      await api.deleteCustomer(id);
+      const res = await api.getCustomers();
+      setCustomers(await res.json());
+    } catch (error) {
+      console.error("Failed to delete customer", error);
+    }
+  };
+
   return (
     <div className="page-container">
       <div className="page-header">
@@ -122,7 +134,14 @@ export default function Customers() {
                   <span className="status-badge active">Active</span>
                 </td>
                 <td>
-                  <button className="btn-icon">Edit</button>
+                  {isAdmin() && (
+                    <button 
+                      className="btn-icon btn-danger" 
+                      onClick={() => deleteCustomer(c._id || c.id)}
+                    >
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

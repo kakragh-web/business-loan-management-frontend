@@ -26,6 +26,12 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  deleteCustomer: async (id) =>
+    fetch(`${API_URL}/customers/${id}`, {
+      method: "DELETE",
+      headers: authHeader(),
+    }),
+
   getLoans: async () => fetch(`${API_URL}/loans`, { headers: authHeader() }),
 
   createLoan: async (data) =>
