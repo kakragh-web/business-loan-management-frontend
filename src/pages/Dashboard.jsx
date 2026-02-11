@@ -2,26 +2,66 @@ import { useState, useEffect } from "react";
 import { customers as mockCustomers, loans as mockLoans, transactions } from "../data/mockData";
 import StatCard from "../components/StatCard";
 import { api } from "../services/api";
+import Chart from "../components/Chart";
+import Table from "../components/Table";
 
 export default function Dashboard() {
   const [customers, setCustomers] = useState(mockCustomers);
   const [loans, setLoans] = useState(mockLoans);
 
   useEffect(() => {
-    Promise.all([
-      api.getCustomers().then(res => res.json()).catch(() => mockCustomers),
-      api.getLoans().then(res => res.json()).catch(() => mockLoans)
-    ])
-      .then(([customersData, loansData]) => {
+    const loadData = async () => {
+      try {
+        const [customersRes, loansRes] = await Promise.all([
+          api.getCustomers().catch(() => null),
+          api.getLoans().catch(() => null),
+        ]);
+
+        let customersData = mockCustomers;
+        let loansData = mockLoans;
+
+        if (customersRes && customersRes.ok) {
+          const json = await customersRes.json();
+          customersData = Array.isArray(json) ? json : mockCustomers;
+        }
+
+        if (loansRes && loansRes.ok) {
+          const json = await loansRes.json();
+          loansData = Array.isArray(json) ? json : mockLoans;
+        }
+
         setCustomers(customersData);
         setLoans(loansData);
-      })
-      .catch(err => console.error("Failed to fetch data", err));
+      } catch (err) {
+        console.error("Failed to fetch data, using mock data instead", err);
+        setCustomers(mockCustomers);
+        setLoans(mockLoans);
+      }
+    };
+
+    loadData();
   }, []);
 
-  const activeLoans = loans.filter((l) => l.status === "Active").length;
-  const totalDisbursed = loans.reduce((sum, l) => sum + l.amount, 0);
+  const safeLoans = Array.isArray(loans) ? loans : [];
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+
+  const activeLoans = safeLoans.filter((l) => l.status === "Active").length;
+  const totalDisbursed = safeLoans.reduce((sum, l) => sum + l.amount, 0);
   const totalRevenue = transactions.reduce((sum, t) => sum + t.amount, 0);
+
+  // Build chart data using loans
+  const chartData = {
+    labels: safeLoans.map((l) => l.customer),
+    datasets: [
+      {
+        label: "Loan Amounts ($)",
+        data: safeLoans.map((l) => l.amount),
+        borderColor: "rgb(99, 102, 241)",
+        backgroundColor: "rgba(99, 102, 241, 0.1)",
+        tension: 0.4,
+      },
+    ],
+  };
 
   return (
     <div className="page-container">
@@ -36,7 +76,13 @@ export default function Dashboard() {
         <StatCard title="Revenue" value={`$${totalRevenue.toLocaleString()}`} icon="chart-line" />
       </div>
 
+      {/* Chart + Recent Loans section */}
       <div className="recent-section">
+        <div className="section-card" style={{ flex: 2 }}>
+          <h3>Loan Distribution</h3>
+          <Chart data={chartData} />
+        </div>
+
         <div className="section-card">
           <h3>Recent Loans</h3>
           <table>
@@ -61,6 +107,14 @@ export default function Dashboard() {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Customers table using reusable Table component */}
+      <div className="recent-section" style={{ marginTop: "2rem" }}>
+        <div className="section-card" style={{ width: "100%" }}>
+          <h3>Customers</h3>
+          <Table data={safeCustomers} />
         </div>
       </div>
     </div>
