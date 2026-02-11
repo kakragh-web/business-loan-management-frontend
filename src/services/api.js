@@ -26,6 +26,13 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  updateCustomer: async (id, data) =>
+    fetch(`${API_URL}/customers/${id}`, {
+      method: "PUT",
+      headers: authHeader(),
+      body: JSON.stringify(data),
+    }),
+
   deleteCustomer: async (id) =>
     fetch(`${API_URL}/customers/${id}`, {
       method: "DELETE",

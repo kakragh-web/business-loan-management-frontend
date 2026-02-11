@@ -9,6 +9,7 @@ export default function Customers() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState(null);
 
   useEffect(() => {
     api
@@ -36,6 +37,45 @@ export default function Customers() {
       setShowForm(false);
     } catch (error) {
       console.error("Failed to create customer", error);
+      alert("Failed to create customer. Please try again.");
+    }
+  };
+
+  const startEdit = (customer) => {
+    setEditingCustomer(customer);
+    setName(customer.name || "");
+    setPhone(customer.phone || "");
+    setEmail(customer.email || "");
+    setShowForm(false);
+  };
+
+  const cancelEdit = () => {
+    setEditingCustomer(null);
+    setName("");
+    setPhone("");
+    setEmail("");
+  };
+
+  const updateCustomer = async (e) => {
+    e.preventDefault();
+
+    if (!editingCustomer) return;
+
+    const updatedData = {
+      name,
+      phone,
+      email,
+    };
+
+    try {
+      await api.updateCustomer(editingCustomer._id || editingCustomer.id, updatedData);
+      const res = await api.getCustomers();
+      setCustomers(await res.json());
+      cancelEdit();
+      alert("Customer updated successfully!");
+    } catch (error) {
+      console.error("Failed to update customer", error);
+      alert("Failed to update customer. Please try again.");
     }
   };
 
@@ -46,8 +86,10 @@ export default function Customers() {
       await api.deleteCustomer(id);
       const res = await api.getCustomers();
       setCustomers(await res.json());
+      alert("Customer deleted successfully!");
     } catch (error) {
       console.error("Failed to delete customer", error);
+      alert("Failed to delete customer. Please try again.");
     }
   };
 
@@ -62,9 +104,10 @@ export default function Customers() {
         )}
       </div>
 
-      {showForm && (
+      {(showForm || editingCustomer) && (
         <div className="form-card">
-          <form onSubmit={addCustomer}>
+          <h3>{editingCustomer ? "Edit Customer" : "Add New Customer"}</h3>
+          <form onSubmit={editingCustomer ? updateCustomer : addCustomer}>
             <div className="form-row">
               <div className="input-group">
                 <label>Customer Name</label>
@@ -99,12 +142,12 @@ export default function Customers() {
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={() => setShowForm(false)}
+                onClick={editingCustomer ? cancelEdit : () => setShowForm(false)}
               >
                 Cancel
               </button>
               <button type="submit" className="btn-primary">
-                Save Customer
+                {editingCustomer ? "Update Customer" : "Save Customer"}
               </button>
             </div>
           </form>
@@ -135,12 +178,31 @@ export default function Customers() {
                 </td>
                 <td>
                   {isAdmin() && (
-                    <button 
-                      className="btn-icon btn-danger" 
-                      onClick={() => deleteCustomer(c._id || c.id)}
-                    >
-                      Delete
-                    </button>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <button 
+                        className="btn-icon" 
+                        onClick={() => startEdit(c)}
+                        style={{ 
+                          backgroundColor: "#3b82f6", 
+                          color: "white",
+                          border: "none",
+                          padding: "0.5rem 1rem",
+                          borderRadius: "4px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        <i className="fas fa-edit"></i> Edit
+                      </button>
+                      <button 
+                        className="btn-icon btn-danger" 
+                        onClick={() => deleteCustomer(c._id || c.id)}
+                      >
+                        <i className="fas fa-trash"></i> Delete
+                      </button>
+                    </div>
+                  )}
+                  {!isAdmin() && (
+                    <span style={{ color: "#999", fontStyle: "italic" }}>View only</span>
                   )}
                 </td>
               </tr>
