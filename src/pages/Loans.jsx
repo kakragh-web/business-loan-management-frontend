@@ -113,36 +113,49 @@ export default function Loans() {
       )}
 
       <div className="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Customer</th>
-              <th>Amount</th>
-              <th>Interest Rate</th>
-              <th>Term</th>
-              <th>Status</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loans.map((l) => (
-              <tr key={l.id}>
-                <td>{l.id}</td>
-                <td>{l.customer}</td>
-                <td>${l.amount.toLocaleString()}</td>
-                <td>{l.interestRate ? `${l.interestRate}%` : "N/A"}</td>
-                <td>{l.term ? `${l.term} months` : "N/A"}</td>
-                <td>
-                  <span className={`status-badge ${l.status.toLowerCase()}`}>
-                    {l.status}
-                  </span>
-                </td>
-                <td>{l.date || "N/A"}</td>
+        <div className="table-scroll-hint">
+          <i className="fas fa-arrows-alt-h"></i> Scroll horizontally to see all columns
+        </div>
+        <div className="table-wrapper">
+          <table className="responsive-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Interest Rate</th>
+                <th>Term</th>
+                <th>Status</th>
+                <th>Date</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {(Array.isArray(loans) ? loans : []).length > 0 ? (
+                (Array.isArray(loans) ? loans : []).map((l) => (
+                  <tr key={l.id || l._id}>
+                    <td>{l.id || l._id || "N/A"}</td>
+                    <td>{l.customer || "N/A"}</td>
+                    <td>${(l.amount || 0).toLocaleString()}</td>
+                    <td>{l.interestRate ? `${l.interestRate}%` : "N/A"}</td>
+                    <td>{l.term ? `${l.term} months` : "N/A"}</td>
+                    <td>
+                      <span className={`status-badge ${(l.status || "").toLowerCase()}`}>
+                        {l.status || "N/A"}
+                      </span>
+                    </td>
+                    <td>{l.date || "N/A"}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: "center", padding: "2rem", color: "#999" }}>
+                    No loans found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

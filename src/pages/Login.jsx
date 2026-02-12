@@ -1,16 +1,31 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { api } from "../services/api";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (email && password) {
-      localStorage.setItem("token", "demo-token");
+
+    if (!email || !password) return;
+
+    try {
+      const res = await api.login({ email, password });
+
+      if (!res.ok) {
+        alert("Invalid email or password");
+        return;
+      }
+
+      const data = await res.json(); // { token, user }
+      localStorage.setItem("token", data.token);
       navigate("/dashboard");
+    } catch (error) {
+      console.error("Login failed", error);
+      alert("Login failed. Please try again.");
     }
   };
 

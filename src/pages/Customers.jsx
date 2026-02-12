@@ -12,10 +12,24 @@ export default function Customers() {
   const [editingCustomer, setEditingCustomer] = useState(null);
 
   useEffect(() => {
-    api
-      .getCustomers()
-      .then((res) => res.json())
-      .then(setCustomers);
+    const loadCustomers = async () => {
+      try {
+        const res = await api.getCustomers().catch(() => null);
+        
+        if (res && res.ok) {
+          const json = await res.json();
+          setCustomers(Array.isArray(json) ? json : initialCustomers);
+        } else {
+          // If API fails (401, network error, etc.), use mock data
+          setCustomers(initialCustomers);
+        }
+      } catch (error) {
+        console.error("Failed to fetch customers, using mock data", error);
+        setCustomers(initialCustomers);
+      }
+    };
+
+    loadCustomers();
   }, []);
 
   const addCustomer = async (e) => {
@@ -29,12 +43,22 @@ export default function Customers() {
 
     try {
       await api.createCustomer(newCustomer);
-      const res = await api.getCustomers();
-      setCustomers(await res.json());
+      const res = await api.getCustomers().catch(() => null);
+      
+      if (res && res.ok) {
+        const json = await res.json();
+        setCustomers(Array.isArray(json) ? json : initialCustomers);
+      } else {
+        // If refresh fails, add to local state
+        const newId = Math.max(...customers.map(c => c.id || 0), 0) + 1;
+        setCustomers([...customers, { ...newCustomer, id: newId }]);
+      }
+      
       setName("");
       setPhone("");
       setEmail("");
       setShowForm(false);
+      alert("Customer added successfully!");
     } catch (error) {
       console.error("Failed to create customer", error);
       alert("Failed to create customer. Please try again.");
@@ -69,8 +93,20 @@ export default function Customers() {
 
     try {
       await api.updateCustomer(editingCustomer._id || editingCustomer.id, updatedData);
-      const res = await api.getCustomers();
-      setCustomers(await res.json());
+      const res = await api.getCustomers().catch(() => null);
+      
+      if (res && res.ok) {
+        const json = await res.json();
+        setCustomers(Array.isArray(json) ? json : initialCustomers);
+      } else {
+        // If refresh fails, update local state
+        setCustomers(customers.map(c => 
+          (c._id || c.id) === (editingCustomer._id || editingCustomer.id)
+            ? { ...c, ...updatedData }
+            : c
+        ));
+      }
+      
       cancelEdit();
       alert("Customer updated successfully!");
     } catch (error) {
@@ -84,8 +120,16 @@ export default function Customers() {
 
     try {
       await api.deleteCustomer(id);
-      const res = await api.getCustomers();
-      setCustomers(await res.json());
+      const res = await api.getCustomers().catch(() => null);
+      
+      if (res && res.ok) {
+        const json = await res.json();
+        setCustomers(Array.isArray(json) ? json : initialCustomers);
+      } else {
+        // If refresh fails, remove from local state
+        setCustomers(customers.filter(c => (c._id || c.id) !== id));
+      }
+      
       alert("Customer deleted successfully!");
     } catch (error) {
       console.error("Failed to delete customer", error);
@@ -95,11 +139,24 @@ export default function Customers() {
 
   return (
     <div className="page-container">
-      <div className="page-header">
+      <div className="page-header" style={{ 
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: "1rem"
+      }}>
         <h2>Customers</h2>
         {isAdmin() && (
-          <button className="btn-primary" onClick={() => setShowForm(!showForm)}>
-            <i className="fas fa-plus"></i> Add Customer
+          <button 
+            className="btn-primary" 
+            onClick={() => setShowForm(!showForm)}
+            style={{ 
+              whiteSpace: "nowrap",
+              minWidth: "auto"
+            }}
+          >
+            <i className="fas fa-plus"></i> <span>Add Customer</span>
           </button>
         )}
       </div>
@@ -154,61 +211,75 @@ export default function Customers() {
         </div>
       )}
 
-      <div className="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {customers.map((c) => (
-              <tr key={c.id}>
-                <td>{c.id}</td>
-                <td>{c.name}</td>
-                <td>{c.phone}</td>
-                <td>{c.email || "N/A"}</td>
-                <td>
-                  <span className="status-badge active">Active</span>
-                </td>
-                <td>
-                  {isAdmin() && (
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
-                      <button 
-                        className="btn-icon" 
-                        onClick={() => startEdit(c)}
-                        style={{ 
-                          backgroundColor: "#3b82f6", 
-                          color: "white",
-                          border: "none",
-                          padding: "0.5rem 1rem",
-                          borderRadius: "4px",
-                          cursor: "pointer"
-                        }}
-                      >
-                        <i className="fas fa-edit"></i> Edit
-                      </button>
-                      <button 
-                        className="btn-icon btn-danger" 
-                        onClick={() => deleteCustomer(c._id || c.id)}
-                      >
-                        <i className="fas fa-trash"></i> Delete
-                      </button>
-                    </div>
-                  )}
-                  {!isAdmin() && (
-                    <span style={{ color: "#999", fontStyle: "italic" }}>View only</span>
-                  )}
-                </td>
+<div className="table-card">
+        <div className="table-scroll-hint">
+          <i className="fas fa-arrows-alt-h"></i> Scroll horizontally to see all columns
+        </div>
+        <div className="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {(Array.isArray(customers) ? customers : []).length > 0 ? (
+                (Array.isArray(customers) ? customers : []).map((c) => (
+                  <tr key={c.id || c._id}>
+                    <td>{c.id || c._id || "N/A"}</td>
+                    <td>{c.name || "N/A"}</td>
+                    <td>{c.phone || "N/A"}</td>
+                    <td>{c.email || "N/A"}</td>
+                    <td>
+                      <span className="status-badge active">Active</span>
+                    </td>
+                    <td>
+                      {isAdmin() && (
+                        <div className="action-buttons">
+                          <button
+                            className="btn-edit"
+                            onClick={() => startEdit(c)}
+                            title="Edit Customer"
+                          >
+                            <i className="fas fa-edit"></i>
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            className="btn-delete"
+                            onClick={() => deleteCustomer(c._id || c.id)}
+                            title="Delete Customer"
+                          >
+                            <i className="fas fa-trash"></i>
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      )}
+                      {!isAdmin() && (
+                        <span style={{ color: "#999", fontStyle: "italic" }}>
+                          View only
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan="6"
+                    style={{ textAlign: "center", padding: "2rem", color: "#999" }}
+                  >
+                    No customers found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

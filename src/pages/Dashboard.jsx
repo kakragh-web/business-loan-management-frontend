@@ -85,28 +85,38 @@ export default function Dashboard() {
 
         <div className="section-card">
           <h3>Recent Loans</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Amount</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loans.slice(0, 5).map((l) => (
-                <tr key={l.id}>
-                  <td>{l.customer}</td>
-                  <td>${l.amount.toLocaleString()}</td>
-                  <td>
-                    <span className={`status-badge ${l.status.toLowerCase()}`}>
-                      {l.status}
-                    </span>
-                  </td>
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Amount</th>
+                  <th>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {safeLoans.length > 0 ? (
+                  safeLoans.slice(0, 5).map((l) => (
+                    <tr key={l.id || l._id}>
+                      <td>{l.customer || "N/A"}</td>
+                      <td>${(l.amount || 0).toLocaleString()}</td>
+                      <td>
+                        <span className={`status-badge ${(l.status || "").toLowerCase()}`}>
+                          {l.status || "N/A"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="3" style={{ textAlign: "center", padding: "2rem", color: "#999" }}>
+                      No loans found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

@@ -53,15 +53,53 @@ main {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 1000;
+  z-index: 1001;
   box-shadow: var(--shadow-lg);
   padding: 0;
+  transition: transform 0.3s ease;
+  transform: translateX(0);
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-close {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.sidebar-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  backdrop-filter: blur(2px);
 }
 
 .sidebar .logo {
-  padding: 24px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   text-align: center;
+  flex: 1;
 }
 
 .sidebar .logo h2 {
@@ -124,6 +162,30 @@ main {
   box-shadow: var(--shadow);
 }
 
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.menu-toggle {
+  display: none;
+  background: var(--light-bg);
+  border: 2px solid var(--border-color);
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 20px;
+  transition: all 0.3s ease;
+}
+
+.menu-toggle:hover {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
 .navbar-left h3 {
   font-size: 18px;
   font-weight: 600;
@@ -134,7 +196,29 @@ main {
 .navbar-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.logout-btn {
+  background: var(--error-color);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logout-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
 }
 
 .theme-toggle,
@@ -397,12 +481,36 @@ main {
   border-radius: 16px;
   box-shadow: var(--shadow);
   border: 1px solid var(--border-color);
-  overflow: hidden;
+  width: 100%;
+  overflow: visible;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+/* Optional hint above tables */
+.table-scroll-hint {
+  background: var(--light-bg);
+  border-bottom: 1px solid var(--border-color);
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 8px 16px;
+}
+
+.table-scroll-hint i {
+  margin-right: 6px;
+  color: var(--primary-color);
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 800px; /* forces horizontal scroll on mobile */
 }
 
 thead {
@@ -410,54 +518,97 @@ thead {
 }
 
 thead th {
-  padding: 16px;
+  padding: 12px 10px;
   text-align: left;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
   border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
 }
 
-tbody tr {
+tbody td {
+  padding: 12px 10px;
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: nowrap;
   border-bottom: 1px solid var(--border-color);
-  transition: all 0.3s ease;
 }
 
 tbody tr:hover {
   background: var(--light-bg);
 }
 
-tbody td {
-  padding: 16px;
-  font-size: 14px;
-  color: var(--text-primary);
+/* Action buttons */
+.action-buttons {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
 }
 
-.status-badge {
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  display: inline-block;
+.btn-edit,
+.btn-delete {
+  padding: 0.4rem 0.7rem;
+  font-size: 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #fff;
 }
 
-.status-badge.active {
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--success-color);
+.btn-edit {
+  background-color: #3b82f6;
 }
 
-.status-badge.completed {
-  background: rgba(99, 102, 241, 0.1);
-  color: var(--primary-color);
+.btn-edit:hover {
+  background-color: #2563eb;
 }
 
-.status-badge.pending {
-  background: rgba(245, 158, 11, 0.1);
-  color: var(--warning-color);
+.btn-delete {
+  background-color: #ef4444;
+}
+
+.btn-delete:hover {
+  background-color: #dc2626;
+}
+
+@media (max-width: 768px) {
+  table {
+    min-width: 900px; /* more space for Actions column */
+  }
+
+  thead th,
+  tbody td {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  .btn-edit,
+  .btn-delete {
+    padding: 0.35rem 0.6rem;
+    font-size: 11px;
+  }
+
+  .btn-edit i,
+  .btn-delete i {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  table {
+    min-width: 900px; /* ensure full horizontal scroll */
+  }
+
+  thead th,
+  tbody td {
+    padding: 8px 6px;
+    font-size: 11px;
+  }
 }
 
 /* Login Page */
@@ -673,17 +824,117 @@ tbody td {
   }
 }
 
-@media (max-width: 768px) {
-  .sidebar {
-    left: -280px;
-  }
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
 
+.btn-edit {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-edit:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.btn-delete {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-delete:hover {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+.btn-text {
+  display: inline;
+}
+
+/* Desktop: Sidebar always visible */
+@media (min-width: 1025px) {
+  .sidebar {
+    transform: translateX(0) !important;
+  }
+  
+  .sidebar-overlay {
+    display: none !important;
+  }
+  
+  .sidebar-close {
+    display: none !important;
+  }
+  
+  .menu-toggle {
+    display: none !important;
+  }
+}
+
+/* Tablet and Mobile: Sidebar hidden by default */
+@media (max-width: 1024px) {
   main {
     margin-left: 0;
   }
 
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    display: block;
+  }
+
+  .sidebar-close {
+    display: block;
+  }
+
+  .menu-toggle {
+    display: block;
+  }
+
+  .navbar-left h3 {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 16px 12px;
+  }
+
   .stats {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .form-row {
@@ -694,14 +945,272 @@ tbody td {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .page-header h2 {
+    font-size: 20px;
   }
 
   .navbar-left h3 {
-    font-size: 16px;
+    font-size: 14px;
+  }
+
+  .navbar {
+    padding: 12px 16px;
+  }
+
+  .navbar-right {
+    gap: 8px;
+  }
+
+  .logout-btn span {
+    display: none;
+  }
+
+  .logout-btn {
+    padding: 10px;
+  }
+
+  .navbar-left h3 {
+    display: none;
   }
 
   .table-card {
+    width: 100%;
+    overflow: visible;
+    margin: 0;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+  }
+
+  .table-scroll-hint {
+    display: block !important;
+    font-weight: 500;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+    border-bottom: 2px solid var(--primary-color);
+  }
+
+  .table-wrapper {
     overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    display: block;
+    position: relative;
+    /* Add scroll snap for better mobile UX */
+    scroll-behavior: smooth;
+    /* Ensure scroll reaches the very end */
+    scroll-padding-right: 20px; /* Add padding to ensure full scroll */
+    /* Remove any constraints that might prevent full scroll */
+    max-width: none;
+    /* Add padding to the right of scroll area */
+    padding-right: 0;
+  }
+
+  .responsive-table {
+    min-width: 900px; /* Increased to ensure all columns including Actions are fully visible */
+    width: max-content; /* Allow table to expand to fit all content */
+    display: table;
+    /* Add margin to right to ensure Actions column is fully scrollable */
+    margin-right: 20px;
+  }
+
+  thead th,
+  tbody td {
+    padding: 12px 10px;
+    font-size: 13px;
+    white-space: nowrap; /* Prevent text wrapping in cells */
+  }
+
+  /* Optimize column widths for mobile */
+  .col-id {
+    width: 50px;
+    min-width: 50px;
+    padding: 12px 6px;
+  }
+
+  .col-name {
+    width: 130px;
+    min-width: 120px;
+  }
+
+  .col-phone {
+    width: 120px;
+    min-width: 110px;
+  }
+
+  .col-email {
+    width: 160px;
+    min-width: 150px;
+  }
+
+  .col-status {
+    width: 90px;
+    min-width: 80px;
+  }
+
+  /* Actions column - no sticky on mobile to allow full scroll */
+  .col-actions,
+  thead th.col-actions,
+  tbody td.col-actions {
+    min-width: 170px; /* Increased to ensure buttons are fully visible */
+    width: 170px;
+    padding-left: 12px;
+    padding-right: 16px; /* Extra padding on right for scroll clearance */
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 80px;
+  }
+
+  .btn-edit,
+  .btn-delete {
+    padding: 0.4rem 0.8rem;
+    font-size: 13px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-text {
+    display: inline;
+  }
+
+  .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-container {
+    padding: 12px 8px;
+  }
+
+  .page-header {
+    margin-bottom: 16px;
+  }
+
+  .page-header h2 {
+    font-size: 18px;
+  }
+
+  .table-card {
+    border-radius: 8px;
+    margin: 0 -4px; /* Slight negative margin to use full width */
+    width: calc(100% + 8px);
+  }
+
+  .responsive-table {
+    min-width: 850px; /* Increased to ensure all columns are fully visible on small mobile */
+    width: max-content;
+    /* Add margin to right to ensure Actions column is fully scrollable */
+    margin-right: 20px;
+  }
+
+  thead th,
+  tbody td {
+    padding: 10px 8px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /* Further optimize column widths for very small screens */
+  .col-id {
+    width: 45px;
+    min-width: 45px;
+    padding: 10px 4px;
+    font-size: 11px;
+  }
+
+  .col-name {
+    width: 110px;
+    min-width: 100px;
+    font-size: 12px;
+  }
+
+  .col-phone {
+    width: 100px;
+    min-width: 90px;
+    font-size: 11px;
+  }
+
+  .col-email {
+    width: 140px;
+    min-width: 130px;
+    font-size: 11px;
+  }
+
+  .col-status {
+    width: 75px;
+    min-width: 70px;
+  }
+
+  /* Actions column on very small mobile - no sticky, allow full scroll */
+  .col-actions,
+  thead th.col-actions,
+  tbody td.col-actions {
+    min-width: 160px; /* Ensure buttons are fully visible */
+    width: 160px;
+    padding-left: 10px;
+    padding-right: 16px; /* Extra padding for scroll clearance */
+  }
+
+  /* Action buttons on mobile - compact */
+  .action-buttons {
+    flex-direction: row;
+    gap: 0.3rem;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+  }
+
+  .btn-edit,
+  .btn-delete {
+    padding: 0.35rem 0.6rem;
+    font-size: 11px;
+    min-width: auto;
+    flex-shrink: 0;
+  }
+
+  .btn-text {
+    display: none;
+  }
+
+  .btn-edit i,
+  .btn-delete i {
+    margin: 0;
+    font-size: 12px;
+  }
+
+  /* Status badge on mobile */
+  .status-badge {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .btn-edit,
+  .btn-delete {
+    padding: 0.35rem 0.6rem;
+    font-size: 12px;
+  }
+
+  .btn-text {
+    display: none;
+  }
+
+  .btn-edit i,
+  .btn-delete i {
+    margin: 0;
   }
 }
 
