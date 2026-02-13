@@ -75,6 +75,8 @@ export default function Loans() {
               <div className="input-group">
                 <label>Customer Name</label>
                 <input
+                  id="loan-customer"
+                  name="customer"
                   placeholder="Customer Name"
                   value={customer}
                   onChange={(e) => setCustomer(e.target.value)}
@@ -84,6 +86,8 @@ export default function Loans() {
               <div className="input-group">
                 <label>Loan Amount ($)</label>
                 <input
+                  id="loan-amount"
+                  name="amount"
                   type="number"
                   placeholder="e.g., 5000"
                   value={amount}
@@ -96,6 +100,8 @@ export default function Loans() {
               <div className="input-group">
                 <label>Interest Rate (%)</label>
                 <input
+                  id="loan-interest-rate"
+                  name="interestRate"
                   type="number"
                   step="0.1"
                   placeholder="e.g., 5.5"
@@ -107,6 +113,8 @@ export default function Loans() {
               <div className="input-group">
                 <label>Term (Months)</label>
                 <input
+                  id="loan-term"
+                  name="term"
                   type="number"
                   placeholder="e.g., 12"
                   value={term}

@@ -169,6 +169,8 @@ export default function Customers() {
               <div className="input-group">
                 <label>Customer Name</label>
                 <input
+                  id="customer-name"
+                  name="name"
                   placeholder="Enter full name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -178,6 +180,8 @@ export default function Customers() {
               <div className="input-group">
                 <label>Phone Number</label>
                 <input
+                  id="customer-phone"
+                  name="phone"
                   placeholder="e.g., 024 123 4567"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -188,6 +192,8 @@ export default function Customers() {
             <div className="input-group">
               <label>Email Address</label>
               <input
+                id="customer-email"
+                name="email"
                 type="email"
                 placeholder="customer@example.com"
                 value={email}

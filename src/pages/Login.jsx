@@ -35,6 +35,8 @@ export default function Login() {
         <h2>Staff Login</h2>
 
         <input
+          id="login-email"
+          name="email"
           type="email"
           placeholder="Email"
           value={email}
@@ -43,6 +45,8 @@ export default function Login() {
         />
 
         <input
+          id="login-password"
+          name="password"
           type="password"
           placeholder="Password"
           value={password}
