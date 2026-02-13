@@ -227,16 +227,53 @@ export default function Loans() {
       try {
         const updatedLoan = await updateRes.json();
         if (updatedLoan) {
+          // Merge updated loan with existing data to ensure all fields are preserved
           setLoans(prevLoans =>
-            prevLoans.map(l =>
-              (l._id || l.id) === (editingLoan._id || editingLoan.id)
-                ? updatedLoan
-                : l
-            )
+            prevLoans.map(l => {
+              if ((l._id || l.id) === (editingLoan._id || editingLoan.id)) {
+                // Merge API response with our updated data to ensure all fields are present
+                return {
+                  ...l,
+                  ...updatedLoan,
+                  customer: updatedLoan.customer || updatedData.customer || l.customer,
+                  amount: updatedLoan.amount || updatedData.amount || l.amount,
+                  interestRate: updatedLoan.interestRate || updatedData.interestRate || l.interestRate,
+                  term: updatedLoan.term || updatedData.term || l.term,
+                  status: updatedLoan.status || updatedData.status || l.status,
+                  date: updatedLoan.date || updatedData.date || l.date,
+                };
+              }
+              return l;
+            })
+          );
+        } else {
+          // If no response, ensure our optimistic update has all fields
+          setLoans(prevLoans =>
+            prevLoans.map(l => {
+              if ((l._id || l.id) === (editingLoan._id || editingLoan.id)) {
+                return {
+                  ...l,
+                  ...updatedData,
+                };
+              }
+              return l;
+            })
           );
         }
       } catch (e) {
-        // Response might not have JSON, that's okay
+        console.error("Failed to parse update response", e);
+        // If parsing fails, ensure our optimistic update has all fields
+        setLoans(prevLoans =>
+          prevLoans.map(l => {
+            if ((l._id || l.id) === (editingLoan._id || editingLoan.id)) {
+              return {
+                ...l,
+                ...updatedData,
+              };
+            }
+            return l;
+          })
+        );
       }
 
       cancelEdit();
