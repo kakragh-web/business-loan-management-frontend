@@ -19,24 +19,49 @@ export default function Loans() {
         if (res && res.ok) {
           try {
             const json = await res.json();
-            // Only update if we got valid array data, otherwise keep mock data
+            // Only update if we got valid array data with items
             if (Array.isArray(json) && json.length > 0) {
-              setLoans(json);
+              // Use functional setState to access current state
+              setLoans(prevLoans => {
+                const currentCount = prevLoans.length;
+                // Only replace if API returns more or equal items (full refresh)
+                // Otherwise, merge API data with existing data to avoid losing items
+                if (json.length >= currentCount || currentCount === 0) {
+                  return json;
+                } else {
+                  // API returned fewer items, merge with existing to preserve all data
+                  const existingIds = new Set(prevLoans.map(l => l.id || l._id));
+                  const newItems = json.filter(l => !existingIds.has(l.id || l._id));
+                  return [...prevLoans, ...newItems];
+                }
+              });
             } else {
-              // API returned empty array or invalid data, keep mock data
-              console.log("API returned empty or invalid data, using mock data");
-              setLoans(initialLoans);
+              // API returned empty array or invalid data, keep existing data
+              console.log("API returned empty or invalid data, keeping existing data");
+              setLoans(prevLoans => {
+                // Don't change state if we already have data
+                return prevLoans.length === 0 ? initialLoans : prevLoans;
+              });
             }
           } catch (parseErr) {
             console.error("Failed to parse loans response", parseErr);
-            setLoans(initialLoans);
+            setLoans(prevLoans => {
+              // Keep existing data if we have it
+              return prevLoans.length === 0 ? initialLoans : prevLoans;
+            });
           }
         } else {
-          setLoans(initialLoans);
+          // 401 or any error → keep existing data or use mock data
+          setLoans(prevLoans => {
+            return prevLoans.length === 0 ? initialLoans : prevLoans;
+          });
         }
       } catch (err) {
-        console.error("Failed to fetch loans, using mock data", err);
-        setLoans(initialLoans);
+        console.error("Failed to fetch loans, keeping existing data", err);
+        setLoans(prevLoans => {
+          // Keep existing data if we have it
+          return prevLoans.length === 0 ? initialLoans : prevLoans;
+        });
       }
     };
   
@@ -54,16 +79,67 @@ export default function Loans() {
     };
 
     try {
-      await api.createLoan(newLoan);
-      const res = await api.getLoans();
-      setLoans(await res.json());
+      const createRes = await api.createLoan(newLoan);
+      
+      // Check if creation was successful
+      if (!createRes || !createRes.ok) {
+        alert("Failed to create loan. Please try again.");
+        return;
+      }
+
+      // Get current loans count before refresh
+      const currentLoans = Array.isArray(loans) ? loans : [];
+      const currentCount = currentLoans.length;
+
+      // Try to refresh the list from API
+      const res = await api.getLoans().catch(() => null);
+      
+      if (res && res.ok) {
+        try {
+          const json = await res.json();
+          // If API returns valid data with more or equal loans, use it
+          // Otherwise, append new loan to existing list
+          if (Array.isArray(json) && json.length >= currentCount) {
+            setLoans(json);
+          } else {
+            // API returned fewer loans, append new loan to existing list
+            const newId = Math.max(...currentLoans.map(l => l.id || l._id || 0), 0) + 1;
+            // Check if loan already exists (avoid duplicates)
+            const customerExists = currentLoans.some(l => l.customer === newLoan.customer && l.amount === newLoan.amount);
+            if (!customerExists) {
+              setLoans([...currentLoans, { ...newLoan, id: newId, status: "Active", date: new Date().toISOString().split('T')[0] }]);
+            } else {
+              // Loan already exists, just refresh from API
+              setLoans(Array.isArray(json) && json.length > 0 ? json : currentLoans);
+            }
+          }
+        } catch (parseErr) {
+          console.error("Failed to parse loans response", parseErr);
+          // If refresh fails, add to local state
+          const newId = Math.max(...currentLoans.map(l => l.id || l._id || 0), 0) + 1;
+          const customerExists = currentLoans.some(l => l.customer === newLoan.customer && l.amount === newLoan.amount);
+          if (!customerExists) {
+            setLoans([...currentLoans, { ...newLoan, id: newId, status: "Active", date: new Date().toISOString().split('T')[0] }]);
+          }
+        }
+      } else {
+        // If refresh fails, add to local state
+        const newId = Math.max(...currentLoans.map(l => l.id || l._id || 0), 0) + 1;
+        const customerExists = currentLoans.some(l => l.customer === newLoan.customer && l.amount === newLoan.amount);
+        if (!customerExists) {
+          setLoans([...currentLoans, { ...newLoan, id: newId, status: "Active", date: new Date().toISOString().split('T')[0] }]);
+        }
+      }
+      
       setAmount("");
       setCustomer("");
       setInterestRate("");
       setTerm("");
       setShowForm(false);
+      alert("Loan added successfully!");
     } catch (error) {
       console.error("Failed to create loan", error);
+      alert("Failed to create loan. Please try again.");
     }
   };
 

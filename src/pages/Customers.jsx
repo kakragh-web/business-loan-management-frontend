@@ -20,25 +20,49 @@ export default function Customers() {
         if (res && res.ok) {
           try {
             const json = await res.json();
-            // Only update if we got valid array data, otherwise keep mock data
+            // Only update if we got valid array data with items
             if (Array.isArray(json) && json.length > 0) {
-              setCustomers(json);
+              // Use functional setState to access current state
+              setCustomers(prevCustomers => {
+                const currentCount = prevCustomers.length;
+                // Only replace if API returns more or equal items (full refresh)
+                // Otherwise, merge API data with existing data to avoid losing items
+                if (json.length >= currentCount || currentCount === 0) {
+                  return json;
+                } else {
+                  // API returned fewer items, merge with existing to preserve all data
+                  const existingIds = new Set(prevCustomers.map(c => c.id || c._id));
+                  const newItems = json.filter(c => !existingIds.has(c.id || c._id));
+                  return [...prevCustomers, ...newItems];
+                }
+              });
             } else {
-              // API returned empty array or invalid data, keep mock data
-              console.log("API returned empty or invalid data, using mock data");
-              setCustomers(initialCustomers);
+              // API returned empty array or invalid data, keep existing data
+              console.log("API returned empty or invalid data, keeping existing data");
+              setCustomers(prevCustomers => {
+                // Don't change state if we already have data
+                return prevCustomers.length === 0 ? initialCustomers : prevCustomers;
+              });
             }
           } catch (parseErr) {
             console.error("Failed to parse customers response", parseErr);
-            setCustomers(initialCustomers);
+            setCustomers(prevCustomers => {
+              // Keep existing data if we have it
+              return prevCustomers.length === 0 ? initialCustomers : prevCustomers;
+            });
           }
         } else {
-          // 401 or any error → use mock data
-          setCustomers(initialCustomers);
+          // 401 or any error → keep existing data or use mock data
+          setCustomers(prevCustomers => {
+            return prevCustomers.length === 0 ? initialCustomers : prevCustomers;
+          });
         }
       } catch (error) {
-        console.error("Failed to fetch customers, using mock data", error);
-        setCustomers(initialCustomers);
+        console.error("Failed to fetch customers, keeping existing data", error);
+        setCustomers(prevCustomers => {
+          // Keep existing data if we have it
+          return prevCustomers.length === 0 ? initialCustomers : prevCustomers;
+        });
       }
     };
   
