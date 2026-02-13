@@ -23,7 +23,13 @@ export default function Dashboard() {
         if (customersRes && customersRes.ok) {
           try {
             const json = await customersRes.json();
-            customersData = Array.isArray(json) ? json : mockCustomers;
+            // Only update if we got valid array data with items, otherwise keep mock data
+            if (Array.isArray(json) && json.length > 0) {
+              customersData = json;
+            } else {
+              console.log("API returned empty or invalid customers data, using mock data");
+              customersData = mockCustomers;
+            }
           } catch (parseErr) {
             console.error("Failed to parse customers response", parseErr);
             customersData = mockCustomers;
@@ -33,7 +39,13 @@ export default function Dashboard() {
         if (loansRes && loansRes.ok) {
           try {
             const json = await loansRes.json();
-            loansData = Array.isArray(json) ? json : mockLoans;
+            // Only update if we got valid array data with items, otherwise keep mock data
+            if (Array.isArray(json) && json.length > 0) {
+              loansData = json;
+            } else {
+              console.log("API returned empty or invalid loans data, using mock data");
+              loansData = mockLoans;
+            }
           } catch (parseErr) {
             console.error("Failed to parse loans response", parseErr);
             loansData = mockLoans;
@@ -59,13 +71,24 @@ export default function Dashboard() {
   const totalDisbursed = safeLoans.reduce((sum, l) => sum + l.amount, 0);
   const totalRevenue = transactions.reduce((sum, t) => sum + t.amount, 0);
 
-  // Build chart data using loans
-  const chartData = {
-    labels: safeLoans.map((l) => l.customer),
+  // Build chart data using loans - ensure we always have valid data
+  const chartData = safeLoans.length > 0 ? {
+    labels: safeLoans.map((l) => l.customer || "N/A"),
     datasets: [
       {
         label: "Loan Amounts ($)",
-        data: safeLoans.map((l) => l.amount),
+        data: safeLoans.map((l) => l.amount || 0),
+        borderColor: "rgb(99, 102, 241)",
+        backgroundColor: "rgba(99, 102, 241, 0.1)",
+        tension: 0.4,
+      },
+    ],
+  } : {
+    labels: [],
+    datasets: [
+      {
+        label: "Loan Amounts ($)",
+        data: [],
         borderColor: "rgb(99, 102, 241)",
         backgroundColor: "rgba(99, 102, 241, 0.1)",
         tension: 0.4,
