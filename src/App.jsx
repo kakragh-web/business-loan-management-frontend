@@ -6,8 +6,7 @@ import Loans from "./pages/Loans";
 import Transactions from "./pages/Transactions";
 import LoanCalculator from "./pages/LoanCalculator";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Sidebar from "./components/Sidebar";
-import Navbar from "./components/Navbar";
+import Layout from "./components/Layout";
 import "./styles/main.css";
 
 function App() {
@@ -19,13 +18,9 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <div className="app-layout">
-                <Sidebar />
-                <main>
-                  <Navbar />
-                  <Dashboard />
-                </main>
-              </div>
+              <Layout>
+                <Dashboard />
+              </Layout>
             </ProtectedRoute>
           }
         />
@@ -33,13 +28,9 @@ function App() {
           path="/customers"
           element={
             <ProtectedRoute>
-              <div className="app-layout">
-                <Sidebar />
-                <main>
-                  <Navbar />
-                  <Customers />
-                </main>
-              </div>
+              <Layout>
+                <Customers />
+              </Layout>
             </ProtectedRoute>
           }
         />
@@ -47,13 +38,9 @@ function App() {
           path="/loans"
           element={
             <ProtectedRoute>
-              <div className="app-layout">
-                <Sidebar />
-                <main>
-                  <Navbar />
-                  <Loans />
-                </main>
-              </div>
+              <Layout>
+                <Loans />
+              </Layout>
             </ProtectedRoute>
           }
         />
@@ -61,13 +48,9 @@ function App() {
           path="/calculator"
           element={
             <ProtectedRoute>
-              <div className="app-layout">
-                <Sidebar />
-                <main>
-                  <Navbar />
-                  <LoanCalculator />
-                </main>
-              </div>
+              <Layout>
+                <LoanCalculator />
+              </Layout>
             </ProtectedRoute>
           }
         />
@@ -75,13 +58,9 @@ function App() {
           path="/transactions"
           element={
             <ProtectedRoute>
-              <div className="app-layout">
-                <Sidebar />
-                <main>
-                  <Navbar />
-                  <Transactions />
-                </main>
-              </div>
+              <Layout>
+                <Transactions />
+              </Layout>
             </ProtectedRoute>
           }
         />

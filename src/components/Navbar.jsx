@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../utils/auth";
 
-export default function Navbar() {
+export default function Navbar({ onMenuToggle }) {
   const navigate = useNavigate();
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
   const [showNotifications, setShowNotifications] = useState(false);
@@ -22,6 +22,13 @@ export default function Navbar() {
   return (
     <header className="navbar">
       <div className="navbar-left">
+        <button 
+          className="menu-toggle" 
+          onClick={onMenuToggle}
+          aria-label="Toggle menu"
+        >
+          <i className="fas fa-bars"></i>
+        </button>
         <h3>Business Loan Management System</h3>
       </div>
       <div className="navbar-right">
@@ -71,7 +78,7 @@ export default function Navbar() {
         </div>
         <button onClick={handleLogout} className="logout-btn">
           <i className="fas fa-sign-out-alt"></i>
-          Logout
+          <span>Logout</span>
         </button>
       </div>
     </header>

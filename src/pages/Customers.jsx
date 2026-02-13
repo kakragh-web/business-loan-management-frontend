@@ -15,12 +15,12 @@ export default function Customers() {
     const loadCustomers = async () => {
       try {
         const res = await api.getCustomers().catch(() => null);
-        
+  
         if (res && res.ok) {
           const json = await res.json();
           setCustomers(Array.isArray(json) ? json : initialCustomers);
         } else {
-          // If API fails (401, network error, etc.), use mock data
+          // 401 or any error → use mock data
           setCustomers(initialCustomers);
         }
       } catch (error) {
@@ -28,7 +28,7 @@ export default function Customers() {
         setCustomers(initialCustomers);
       }
     };
-
+  
     loadCustomers();
   }, []);
 
@@ -270,8 +270,7 @@ export default function Customers() {
               ) : (
                 <tr>
                   <td
-                    colSpan="6"
-                    style={{ textAlign: "center", padding: "2rem", color: "#999" }}
+                    colSpan="6" style={{ textAlign: "center", padding: "2rem", color: "#999" }}
                   >
                     No customers found
                   </td>

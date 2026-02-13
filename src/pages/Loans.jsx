@@ -12,10 +12,23 @@ export default function Loans() {
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
-    api.getLoans()
-      .then(res => res.json())
-      .then(setLoans)
-      .catch(err => console.error("Failed to fetch loans", err));
+    const loadLoans = async () => {
+      try {
+        const res = await api.getLoans().catch(() => null);
+  
+        if (res && res.ok) {
+          const json = await res.json();
+          setLoans(Array.isArray(json) ? json : initialLoans);
+        } else {
+          setLoans(initialLoans);
+        }
+      } catch (err) {
+        console.error("Failed to fetch loans, using mock data", err);
+        setLoans(initialLoans);
+      }
+    };
+  
+    loadLoans();
   }, []);
 
   const addLoan = async (e) => {
@@ -41,6 +54,8 @@ export default function Loans() {
       console.error("Failed to create loan", error);
     }
   };
+
+  const safeLoans = Array.isArray(loans) ? loans : [];
 
   return (
     <div className="page-container">
@@ -130,8 +145,8 @@ export default function Loans() {
               </tr>
             </thead>
             <tbody>
-              {(Array.isArray(loans) ? loans : []).length > 0 ? (
-                (Array.isArray(loans) ? loans : []).map((l) => (
+              {safeLoans.length > 0 ? (
+                safeLoans.map((l) => (
                   <tr key={l.id || l._id}>
                     <td>{l.id || l._id || "N/A"}</td>
                     <td>{l.customer || "N/A"}</td>
