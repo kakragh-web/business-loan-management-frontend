@@ -55,25 +55,56 @@ export default function Customers() {
     };
 
     try {
-      await api.createCustomer(newCustomer);
+      const createRes = await api.createCustomer(newCustomer);
+      
+      // Check if creation was successful
+      if (!createRes || !createRes.ok) {
+        alert("Failed to create customer. Please try again.");
+        return;
+      }
+
+      // Get current customers count before refresh
+      const currentCustomers = Array.isArray(customers) ? customers : [];
+      const currentCount = currentCustomers.length;
+
+      // Try to refresh the list from API
       const res = await api.getCustomers().catch(() => null);
       
       if (res && res.ok) {
         try {
           const json = await res.json();
-          setCustomers(Array.isArray(json) ? json : initialCustomers);
+          // If API returns valid data with more or equal customers, use it
+          // Otherwise, append new customer to existing list (API might only return the new one)
+          if (Array.isArray(json) && json.length >= currentCount) {
+            setCustomers(json);
+          } else {
+            // API returned fewer customers than we have, append new customer to existing list
+            const newId = Math.max(...currentCustomers.map(c => c.id || c._id || 0), 0) + 1;
+            // Check if customer already exists (avoid duplicates)
+            const emailExists = currentCustomers.some(c => c.email === newCustomer.email);
+            if (!emailExists) {
+              setCustomers([...currentCustomers, { ...newCustomer, id: newId }]);
+            } else {
+              // Customer already exists, just refresh from API
+              setCustomers(Array.isArray(json) && json.length > 0 ? json : currentCustomers);
+            }
+          }
         } catch (parseErr) {
           console.error("Failed to parse customers response", parseErr);
           // If refresh fails, add to local state
-          const safeCustomers = Array.isArray(customers) ? customers : [];
-          const newId = Math.max(...safeCustomers.map(c => c.id || 0), 0) + 1;
-          setCustomers([...safeCustomers, { ...newCustomer, id: newId }]);
+          const newId = Math.max(...currentCustomers.map(c => c.id || c._id || 0), 0) + 1;
+          const emailExists = currentCustomers.some(c => c.email === newCustomer.email);
+          if (!emailExists) {
+            setCustomers([...currentCustomers, { ...newCustomer, id: newId }]);
+          }
         }
       } else {
         // If refresh fails, add to local state
-        const safeCustomers = Array.isArray(customers) ? customers : [];
-        const newId = Math.max(...safeCustomers.map(c => c.id || 0), 0) + 1;
-        setCustomers([...safeCustomers, { ...newCustomer, id: newId }]);
+        const newId = Math.max(...currentCustomers.map(c => c.id || c._id || 0), 0) + 1;
+        const emailExists = currentCustomers.some(c => c.email === newCustomer.email);
+        if (!emailExists) {
+          setCustomers([...currentCustomers, { ...newCustomer, id: newId }]);
+        }
       }
       
       setName("");
