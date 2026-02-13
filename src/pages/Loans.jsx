@@ -17,8 +17,13 @@ export default function Loans() {
         const res = await api.getLoans().catch(() => null);
   
         if (res && res.ok) {
-          const json = await res.json();
-          setLoans(Array.isArray(json) ? json : initialLoans);
+          try {
+            const json = await res.json();
+            setLoans(Array.isArray(json) ? json : initialLoans);
+          } catch (parseErr) {
+            console.error("Failed to parse loans response", parseErr);
+            setLoans(initialLoans);
+          }
         } else {
           setLoans(initialLoans);
         }

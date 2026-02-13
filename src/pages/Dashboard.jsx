@@ -21,17 +21,27 @@ export default function Dashboard() {
         let loansData = mockLoans;
 
         if (customersRes && customersRes.ok) {
-          const json = await customersRes.json();
-          customersData = Array.isArray(json) ? json : mockCustomers;
+          try {
+            const json = await customersRes.json();
+            customersData = Array.isArray(json) ? json : mockCustomers;
+          } catch (parseErr) {
+            console.error("Failed to parse customers response", parseErr);
+            customersData = mockCustomers;
+          }
         }
 
         if (loansRes && loansRes.ok) {
-          const json = await loansRes.json();
-          loansData = Array.isArray(json) ? json : mockLoans;
+          try {
+            const json = await loansRes.json();
+            loansData = Array.isArray(json) ? json : mockLoans;
+          } catch (parseErr) {
+            console.error("Failed to parse loans response", parseErr);
+            loansData = mockLoans;
+          }
         }
 
-        setCustomers(customersData);
-        setLoans(loansData);
+        setCustomers(Array.isArray(customersData) ? customersData : mockCustomers);
+        setLoans(Array.isArray(loansData) ? loansData : mockLoans);
       } catch (err) {
         console.error("Failed to fetch data, using mock data instead", err);
         setCustomers(mockCustomers);
@@ -70,7 +80,7 @@ export default function Dashboard() {
       </div>
 
       <div className="stats">
-        <StatCard title="Total Customers" value={customers.length} icon="users" />
+        <StatCard title="Total Customers" value={safeCustomers.length} icon="users" />
         <StatCard title="Active Loans" value={activeLoans} icon="file-invoice-dollar" />
         <StatCard title="Total Disbursed" value={`$${totalDisbursed.toLocaleString()}`} icon="money-bill-wave" />
         <StatCard title="Revenue" value={`$${totalRevenue.toLocaleString()}`} icon="chart-line" />

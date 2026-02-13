@@ -17,8 +17,13 @@ export default function Customers() {
         const res = await api.getCustomers().catch(() => null);
   
         if (res && res.ok) {
-          const json = await res.json();
-          setCustomers(Array.isArray(json) ? json : initialCustomers);
+          try {
+            const json = await res.json();
+            setCustomers(Array.isArray(json) ? json : initialCustomers);
+          } catch (parseErr) {
+            console.error("Failed to parse customers response", parseErr);
+            setCustomers(initialCustomers);
+          }
         } else {
           // 401 or any error → use mock data
           setCustomers(initialCustomers);
@@ -46,12 +51,21 @@ export default function Customers() {
       const res = await api.getCustomers().catch(() => null);
       
       if (res && res.ok) {
-        const json = await res.json();
-        setCustomers(Array.isArray(json) ? json : initialCustomers);
+        try {
+          const json = await res.json();
+          setCustomers(Array.isArray(json) ? json : initialCustomers);
+        } catch (parseErr) {
+          console.error("Failed to parse customers response", parseErr);
+          // If refresh fails, add to local state
+          const safeCustomers = Array.isArray(customers) ? customers : [];
+          const newId = Math.max(...safeCustomers.map(c => c.id || 0), 0) + 1;
+          setCustomers([...safeCustomers, { ...newCustomer, id: newId }]);
+        }
       } else {
         // If refresh fails, add to local state
-        const newId = Math.max(...customers.map(c => c.id || 0), 0) + 1;
-        setCustomers([...customers, { ...newCustomer, id: newId }]);
+        const safeCustomers = Array.isArray(customers) ? customers : [];
+        const newId = Math.max(...safeCustomers.map(c => c.id || 0), 0) + 1;
+        setCustomers([...safeCustomers, { ...newCustomer, id: newId }]);
       }
       
       setName("");
@@ -96,11 +110,23 @@ export default function Customers() {
       const res = await api.getCustomers().catch(() => null);
       
       if (res && res.ok) {
-        const json = await res.json();
-        setCustomers(Array.isArray(json) ? json : initialCustomers);
+        try {
+          const json = await res.json();
+          setCustomers(Array.isArray(json) ? json : initialCustomers);
+        } catch (parseErr) {
+          console.error("Failed to parse customers response", parseErr);
+          // If refresh fails, update local state
+          const safeCustomers = Array.isArray(customers) ? customers : [];
+          setCustomers(safeCustomers.map(c => 
+            (c._id || c.id) === (editingCustomer._id || editingCustomer.id)
+              ? { ...c, ...updatedData }
+              : c
+          ));
+        }
       } else {
         // If refresh fails, update local state
-        setCustomers(customers.map(c => 
+        const safeCustomers = Array.isArray(customers) ? customers : [];
+        setCustomers(safeCustomers.map(c => 
           (c._id || c.id) === (editingCustomer._id || editingCustomer.id)
             ? { ...c, ...updatedData }
             : c
@@ -123,11 +149,19 @@ export default function Customers() {
       const res = await api.getCustomers().catch(() => null);
       
       if (res && res.ok) {
-        const json = await res.json();
-        setCustomers(Array.isArray(json) ? json : initialCustomers);
+        try {
+          const json = await res.json();
+          setCustomers(Array.isArray(json) ? json : initialCustomers);
+        } catch (parseErr) {
+          console.error("Failed to parse customers response", parseErr);
+          // If refresh fails, remove from local state
+          const safeCustomers = Array.isArray(customers) ? customers : [];
+          setCustomers(safeCustomers.filter(c => (c._id || c.id) !== id));
+        }
       } else {
         // If refresh fails, remove from local state
-        setCustomers(customers.filter(c => (c._id || c.id) !== id));
+        const safeCustomers = Array.isArray(customers) ? customers : [];
+        setCustomers(safeCustomers.filter(c => (c._id || c.id) !== id));
       }
       
       alert("Customer deleted successfully!");

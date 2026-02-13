@@ -9,10 +9,15 @@ export default function Transactions() {
     const loadTransactions = async () => {
       try {
         const res = await api.getTransactions().catch(() => null);
-
+  
         if (res && res.ok) {
-          const json = await res.json();
-          setTransactions(Array.isArray(json) ? json : initialTransactions);
+          try {
+            const json = await res.json();
+            setTransactions(Array.isArray(json) ? json : initialTransactions);
+          } catch (parseErr) {
+            console.error("Failed to parse transactions response", parseErr);
+            setTransactions(initialTransactions);
+          }
         } else {
           // 401 or any error → use mock data
           setTransactions(initialTransactions);
@@ -22,7 +27,7 @@ export default function Transactions() {
         setTransactions(initialTransactions);
       }
     };
-
+  
     loadTransactions();
   }, []);
 
