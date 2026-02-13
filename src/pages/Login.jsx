@@ -87,6 +87,20 @@ export default function Login() {
           errorMessage = "Cannot connect to server. Please check if the backend is running.";
         }
         
+        // If user doesn't exist, suggest registration
+        if (res.status === 400 && errorMessage.includes("Invalid credentials")) {
+          const shouldRegister = window.confirm(
+            "No account found with this email. Would you like to create a new account?"
+          );
+          if (shouldRegister) {
+            setIsRegistering(true);
+            setName("");
+            setEmail(email); // Keep the email they entered
+            setPassword("");
+            return;
+          }
+        }
+        
         alert(errorMessage);
         console.error("Login failed:", res.status, res.statusText);
         return;
@@ -112,6 +126,17 @@ export default function Login() {
     <div className="login-page">
       <form onSubmit={isRegistering ? handleRegister : handleLogin}>
         <h2>{isRegistering ? "Create Account" : "Staff Login"}</h2>
+        
+        {!isRegistering && (
+          <p style={{ 
+            fontSize: "0.9rem", 
+            color: "#666", 
+            marginBottom: "1rem",
+            textAlign: "center"
+          }}>
+            Don't have an account? Click "Register" below to create one.
+          </p>
+        )}
 
         {isRegistering && (
           <input
