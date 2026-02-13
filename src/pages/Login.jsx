@@ -3,9 +3,60 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 
 export default function Login() {
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+
+    if (!name || !email || !password) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    if (password.length < 6) {
+      alert("Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      console.log("Attempting registration with email:", email);
+      const res = await api.register({ name, email, password, role: "admin" });
+      console.log("Register response status:", res.status, res.statusText);
+
+      if (!res.ok) {
+        let errorMessage = "Registration failed";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseErr) {
+          console.error("Failed to parse error response", parseErr);
+        }
+        
+        alert(errorMessage);
+        console.error("Registration failed:", res.status, res.statusText);
+        return;
+      }
+
+      const data = await res.json();
+      
+      if (!data.token) {
+        alert("Registration failed: No token received from server");
+        return;
+      }
+      
+      localStorage.setItem("token", data.token);
+      console.log("Registration successful, token saved");
+      alert("Account created successfully! You are now logged in.");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Registration failed", error);
+      alert(`Registration failed: ${error.message || "Please check your connection and try again."}`);
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -59,8 +110,20 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <form onSubmit={handleLogin}>
-        <h2>Staff Login</h2>
+      <form onSubmit={isRegistering ? handleRegister : handleLogin}>
+        <h2>{isRegistering ? "Create Account" : "Staff Login"}</h2>
+
+        {isRegistering && (
+          <input
+            id="register-name"
+            name="name"
+            type="text"
+            placeholder="Full Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        )}
 
         <input
           id="login-email"
@@ -80,9 +143,34 @@ export default function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          minLength={6}
         />
 
-        <button type="submit">Login</button>
+        <button type="submit">{isRegistering ? "Create Account" : "Login"}</button>
+
+        <div style={{ marginTop: "1rem", textAlign: "center" }}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsRegistering(!isRegistering);
+              setName("");
+              setEmail("");
+              setPassword("");
+            }}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#6366f1",
+              cursor: "pointer",
+              textDecoration: "underline",
+              fontSize: "0.9rem",
+            }}
+          >
+            {isRegistering
+              ? "Already have an account? Login"
+              : "Don't have an account? Register"}
+          </button>
+        </div>
       </form>
     </div>
   );
