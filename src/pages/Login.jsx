@@ -10,22 +10,50 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (!email || !password) return;
+    if (!email || !password) {
+      alert("Please enter both email and password");
+      return;
+    }
 
     try {
+      console.log("Attempting login with email:", email);
       const res = await api.login({ email, password });
+      console.log("Login response status:", res.status, res.statusText);
 
       if (!res.ok) {
-        alert("Invalid email or password");
+        // Try to get error message from response
+        let errorMessage = "Invalid email or password";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseErr) {
+          // If response isn't JSON, use default message
+          console.error("Failed to parse error response", parseErr);
+        }
+        
+        // Check if it's a network/CORS error
+        if (res.status === 0 || res.status === 500) {
+          errorMessage = "Cannot connect to server. Please check if the backend is running.";
+        }
+        
+        alert(errorMessage);
+        console.error("Login failed:", res.status, res.statusText);
         return;
       }
 
       const data = await res.json(); // { token, user }
+      
+      if (!data.token) {
+        alert("Login failed: No token received from server");
+        return;
+      }
+      
       localStorage.setItem("token", data.token);
+      console.log("Login successful, token saved");
       navigate("/dashboard");
     } catch (error) {
       console.error("Login failed", error);
-      alert("Login failed. Please try again.");
+      alert(`Login failed: ${error.message || "Please check your connection and try again."}`);
     }
   };
 

@@ -1,5 +1,10 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
+// Log API URL in development (helps debug)
+if (import.meta.env.DEV) {
+  console.log("API URL:", API_URL);
+}
+
 const authHeader = () => {
   const token = localStorage.getItem("token");
   return {
