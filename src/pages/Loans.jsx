@@ -190,18 +190,36 @@ export default function Loans() {
     );
 
     try {
-      const updateRes = await api.updateLoan(editingLoan._id || editingLoan.id, updatedData);
+      const loanId = editingLoan._id || editingLoan.id;
+      if (!loanId) {
+        alert("Cannot update loan: No ID found");
+        return;
+      }
+
+      console.log("Updating loan with ID:", loanId, "Data:", updatedData);
+      const updateRes = await api.updateLoan(loanId, updatedData);
       
       if (!updateRes || !updateRes.ok) {
+        // Get error message from response
+        let errorMessage = "Failed to update loan. Please try again.";
+        try {
+          const errorData = await updateRes.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          console.error("Failed to parse error response", e);
+        }
+        
+        console.error("Update failed:", updateRes.status, updateRes.statusText, errorMessage);
+        
         // Revert on failure
         setLoans(prevLoans =>
           prevLoans.map(l =>
-            (l._id || l.id) === (editingLoan._id || editingLoan.id)
+            (l._id || l.id) === loanId
               ? editingLoan
               : l
           )
         );
-        alert("Failed to update loan. Please try again.");
+        alert(errorMessage);
         return;
       }
 
@@ -240,19 +258,43 @@ export default function Loans() {
   const deleteLoan = async (id) => {
     if (!window.confirm("Are you sure you want to delete this loan?")) return;
 
+    if (!id) {
+      alert("Cannot delete loan: No ID found");
+      return;
+    }
+
     const loanToDelete = loans.find(l => (l._id || l.id) === id);
-    if (!loanToDelete) return;
+    if (!loanToDelete) {
+      alert("Loan not found");
+      return;
+    }
 
     // Optimistically remove from list
     setLoans(prevLoans => prevLoans.filter(l => (l._id || l.id) !== id));
 
     try {
+      console.log("Deleting loan with ID:", id);
       const deleteRes = await api.deleteLoan(id);
       
       if (!deleteRes || !deleteRes.ok) {
+        // Get error message from response
+        let errorMessage = "Failed to delete loan. Please try again.";
+        try {
+          const errorData = await deleteRes.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          console.error("Failed to parse error response", e);
+        }
+        
+        console.error("Delete failed:", deleteRes.status, deleteRes.statusText, errorMessage);
+        
         // Revert on failure
-        setLoans(prevLoans => [...prevLoans, loanToDelete].sort((a, b) => (a.id || a._id) - (b.id || b._id)));
-        alert("Failed to delete loan. Please try again.");
+        setLoans(prevLoans => [...prevLoans, loanToDelete].sort((a, b) => {
+          const aId = a.id || a._id || 0;
+          const bId = b.id || b._id || 0;
+          return aId - bId;
+        }));
+        alert(errorMessage);
         return;
       }
 
@@ -260,7 +302,11 @@ export default function Loans() {
     } catch (error) {
       console.error("Failed to delete loan", error);
       // Revert on failure
-      setLoans(prevLoans => [...prevLoans, loanToDelete].sort((a, b) => (a.id || a._id) - (b.id || b._id)));
+      setLoans(prevLoans => [...prevLoans, loanToDelete].sort((a, b) => {
+        const aId = a.id || a._id || 0;
+        const bId = b.id || b._id || 0;
+        return aId - bId;
+      }));
       alert("Failed to delete loan. Please try again.");
     }
   };
