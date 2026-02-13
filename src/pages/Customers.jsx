@@ -24,16 +24,20 @@ export default function Customers() {
             if (Array.isArray(json) && json.length > 0) {
               // Use functional setState to access current state
               setCustomers(prevCustomers => {
-                const currentCount = prevCustomers.length;
-                // Only replace if API returns more or equal items (full refresh)
-                // Otherwise, merge API data with existing data to avoid losing items
-                if (json.length >= currentCount || currentCount === 0) {
+                // Always merge - add new items from API that don't exist in current list
+                // This preserves existing data and adds new items
+                const existingIds = new Set(prevCustomers.map(c => String(c.id || c._id)));
+                const newItems = json.filter(c => !existingIds.has(String(c.id || c._id)));
+                
+                // If API has more items than we have, it's a full refresh - use API data
+                // Otherwise, merge new items with existing
+                if (json.length > prevCustomers.length) {
                   return json;
-                } else {
-                  // API returned fewer items, merge with existing to preserve all data
-                  const existingIds = new Set(prevCustomers.map(c => c.id || c._id));
-                  const newItems = json.filter(c => !existingIds.has(c.id || c._id));
+                } else if (newItems.length > 0) {
                   return [...prevCustomers, ...newItems];
+                } else {
+                  // No new items, keep existing data
+                  return prevCustomers;
                 }
               });
             } else {
@@ -78,11 +82,33 @@ export default function Customers() {
       email,
     };
 
+    // Get current customers immediately
+    const currentCustomers = Array.isArray(customers) ? customers : [];
+    
+    // Check for duplicate email
+    const emailExists = currentCustomers.some(c => c.email === newCustomer.email);
+    if (emailExists) {
+      alert("A customer with this email already exists.");
+      return;
+    }
+
+    // Immediately add to the list (optimistic update)
+    const tempId = `temp-${Date.now()}`;
+    setCustomers([...currentCustomers, { ...newCustomer, id: tempId, _id: tempId }]);
+
+    // Clear form immediately
+    setName("");
+    setPhone("");
+    setEmail("");
+    setShowForm(false);
+
     try {
       const createRes = await api.createCustomer(newCustomer);
       
       // Check if creation was successful
       if (!createRes || !createRes.ok) {
+        // Revert the optimistic update on failure
+        setCustomers(currentCustomers);
         alert("Failed to create customer. Please try again.");
         return;
       }
@@ -98,98 +124,20 @@ export default function Customers() {
         // Response might not have JSON body, that's okay
       }
 
-      // Get current customers
-      const currentCustomers = Array.isArray(customers) ? customers : [];
-      const currentCount = currentCustomers.length;
-
-      // Try to refresh the list from API
-      const res = await api.getCustomers().catch(() => null);
-      
-      if (res && res.ok) {
-        try {
-          const json = await res.json();
-          // If API returns valid data with more or equal customers, use it
-          if (Array.isArray(json) && json.length >= currentCount) {
-            setCustomers(json);
-          } else if (Array.isArray(json) && json.length > 0) {
-            // API returned some customers but fewer than we have
-            // Merge: add new ones from API that don't exist in current list
-            const existingIds = new Set(currentCustomers.map(c => String(c.id || c._id)));
-            const newFromApi = json.filter(c => !existingIds.has(String(c.id || c._id)));
-            setCustomers([...currentCustomers, ...newFromApi]);
-          } else if (createdCustomer) {
-            // API returned empty but we have the created customer, add it
-            const existingIds = new Set(currentCustomers.map(c => String(c.id || c._id)));
-            if (!existingIds.has(String(createdCustomer.id || createdCustomer._id))) {
-              setCustomers([...currentCustomers, createdCustomer]);
-            }
-          } else {
-            // No data from API and no created customer, generate ID and add
-            const numericIds = currentCustomers
-              .map(c => {
-                const id = c.id || c._id;
-                return typeof id === 'number' ? id : parseInt(String(id).replace(/\D/g, '')) || 0;
-              })
-              .filter(id => id > 0);
-            const newId = numericIds.length > 0 ? Math.max(...numericIds) + 1 : currentCount + 1;
-            const emailExists = currentCustomers.some(c => c.email === newCustomer.email);
-            if (!emailExists) {
-              setCustomers([...currentCustomers, { ...newCustomer, id: newId }]);
-            }
-          }
-        } catch (parseErr) {
-          console.error("Failed to parse customers response", parseErr);
-          // If refresh fails but we have created customer, add it
-          if (createdCustomer) {
-            const existingIds = new Set(currentCustomers.map(c => String(c.id || c._id)));
-            if (!existingIds.has(String(createdCustomer.id || createdCustomer._id))) {
-              setCustomers([...currentCustomers, createdCustomer]);
-            }
-          } else {
-            // Generate ID and add
-            const numericIds = currentCustomers
-              .map(c => {
-                const id = c.id || c._id;
-                return typeof id === 'number' ? id : parseInt(String(id).replace(/\D/g, '')) || 0;
-              })
-              .filter(id => id > 0);
-            const newId = numericIds.length > 0 ? Math.max(...numericIds) + 1 : currentCount + 1;
-            const emailExists = currentCustomers.some(c => c.email === newCustomer.email);
-            if (!emailExists) {
-              setCustomers([...currentCustomers, { ...newCustomer, id: newId }]);
-            }
-          }
-        }
-      } else {
-        // If refresh fails but we have created customer, add it
-        if (createdCustomer) {
-          const existingIds = new Set(currentCustomers.map(c => String(c.id || c._id)));
-          if (!existingIds.has(String(createdCustomer.id || createdCustomer._id))) {
-            setCustomers([...currentCustomers, createdCustomer]);
-          }
-        } else {
-          // Generate ID and add
-          const numericIds = currentCustomers
-            .map(c => {
-              const id = c.id || c._id;
-              return typeof id === 'number' ? id : parseInt(String(id).replace(/\D/g, '')) || 0;
-            })
-            .filter(id => id > 0);
-          const newId = numericIds.length > 0 ? Math.max(...numericIds) + 1 : currentCount + 1;
-          const emailExists = currentCustomers.some(c => c.email === newCustomer.email);
-          if (!emailExists) {
-            setCustomers([...currentCustomers, { ...newCustomer, id: newId }]);
-          }
-        }
+      // Update the temporary customer with the real one from API
+      if (createdCustomer) {
+        setCustomers(prevCustomers => 
+          prevCustomers.map(c => 
+            (c.id === tempId || c._id === tempId) ? createdCustomer : c
+          )
+        );
       }
       
-      setName("");
-      setPhone("");
-      setEmail("");
-      setShowForm(false);
       alert("Customer added successfully!");
     } catch (error) {
       console.error("Failed to create customer", error);
+      // Revert the optimistic update on failure
+      setCustomers(currentCustomers);
       alert("Failed to create customer. Please try again.");
     }
   };
@@ -388,17 +336,13 @@ export default function Customers() {
             <tbody>
               {safeCustomers.length > 0 ? (
                 safeCustomers.map((c, index) => {
-                  // Get the ID - prefer numeric ID, fallback to _id, then index+1
-                  const customerId = c.id || c._id;
-                  const displayId = customerId 
-                    ? (typeof customerId === 'number' 
-                        ? customerId 
-                        : String(customerId).replace(/[^0-9]/g, '') || customerId)
-                    : index + 1;
+                  // Show sequential number (1, 2, 3...) instead of ID
+                  const displayNumber = index + 1;
+                  const customerId = c.id || c._id || index;
                   
                   return (
                   <tr key={customerId || index}>
-                    <td>{displayId}</td>
+                    <td>{displayNumber}</td>
                     <td>{c.name || "N/A"}</td>
                     <td>{c.phone || "N/A"}</td>
                     <td>{c.email || "N/A"}</td>

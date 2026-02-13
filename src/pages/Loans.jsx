@@ -23,16 +23,20 @@ export default function Loans() {
             if (Array.isArray(json) && json.length > 0) {
               // Use functional setState to access current state
               setLoans(prevLoans => {
-                const currentCount = prevLoans.length;
-                // Only replace if API returns more or equal items (full refresh)
-                // Otherwise, merge API data with existing data to avoid losing items
-                if (json.length >= currentCount || currentCount === 0) {
+                // Always merge - add new items from API that don't exist in current list
+                // This preserves existing data and adds new items
+                const existingIds = new Set(prevLoans.map(l => String(l.id || l._id)));
+                const newItems = json.filter(l => !existingIds.has(String(l.id || l._id)));
+                
+                // If API has more items than we have, it's a full refresh - use API data
+                // Otherwise, merge new items with existing
+                if (json.length > prevLoans.length) {
                   return json;
-                } else {
-                  // API returned fewer items, merge with existing to preserve all data
-                  const existingIds = new Set(prevLoans.map(l => l.id || l._id));
-                  const newItems = json.filter(l => !existingIds.has(l.id || l._id));
+                } else if (newItems.length > 0) {
                   return [...prevLoans, ...newItems];
+                } else {
+                  // No new items, keep existing data
+                  return prevLoans;
                 }
               });
             } else {
@@ -76,69 +80,60 @@ export default function Loans() {
       amount: Number(amount),
       interestRate: Number(interestRate),
       term: Number(term),
+      status: "Active",
+      date: new Date().toISOString().split('T')[0],
     };
+
+    // Get current loans immediately
+    const currentLoans = Array.isArray(loans) ? loans : [];
+
+    // Immediately add to the list (optimistic update)
+    const tempId = `temp-${Date.now()}`;
+    setLoans([...currentLoans, { ...newLoan, id: tempId, _id: tempId }]);
+
+    // Clear form immediately
+    setAmount("");
+    setCustomer("");
+    setInterestRate("");
+    setTerm("");
+    setShowForm(false);
 
     try {
       const createRes = await api.createLoan(newLoan);
       
       // Check if creation was successful
       if (!createRes || !createRes.ok) {
+        // Revert the optimistic update on failure
+        setLoans(currentLoans);
         alert("Failed to create loan. Please try again.");
         return;
       }
 
-      // Get current loans count before refresh
-      const currentLoans = Array.isArray(loans) ? loans : [];
-      const currentCount = currentLoans.length;
+      // Try to get the created loan from the response
+      let createdLoan = null;
+      try {
+        const createData = await createRes.json();
+        if (createData && (createData.id || createData._id)) {
+          createdLoan = createData;
+        }
+      } catch (e) {
+        // Response might not have JSON body, that's okay
+      }
 
-      // Try to refresh the list from API
-      const res = await api.getLoans().catch(() => null);
-      
-      if (res && res.ok) {
-        try {
-          const json = await res.json();
-          // If API returns valid data with more or equal loans, use it
-          // Otherwise, append new loan to existing list
-          if (Array.isArray(json) && json.length >= currentCount) {
-            setLoans(json);
-          } else {
-            // API returned fewer loans, append new loan to existing list
-            const newId = Math.max(...currentLoans.map(l => l.id || l._id || 0), 0) + 1;
-            // Check if loan already exists (avoid duplicates)
-            const customerExists = currentLoans.some(l => l.customer === newLoan.customer && l.amount === newLoan.amount);
-            if (!customerExists) {
-              setLoans([...currentLoans, { ...newLoan, id: newId, status: "Active", date: new Date().toISOString().split('T')[0] }]);
-            } else {
-              // Loan already exists, just refresh from API
-              setLoans(Array.isArray(json) && json.length > 0 ? json : currentLoans);
-            }
-          }
-        } catch (parseErr) {
-          console.error("Failed to parse loans response", parseErr);
-          // If refresh fails, add to local state
-          const newId = Math.max(...currentLoans.map(l => l.id || l._id || 0), 0) + 1;
-          const customerExists = currentLoans.some(l => l.customer === newLoan.customer && l.amount === newLoan.amount);
-          if (!customerExists) {
-            setLoans([...currentLoans, { ...newLoan, id: newId, status: "Active", date: new Date().toISOString().split('T')[0] }]);
-          }
-        }
-      } else {
-        // If refresh fails, add to local state
-        const newId = Math.max(...currentLoans.map(l => l.id || l._id || 0), 0) + 1;
-        const customerExists = currentLoans.some(l => l.customer === newLoan.customer && l.amount === newLoan.amount);
-        if (!customerExists) {
-          setLoans([...currentLoans, { ...newLoan, id: newId, status: "Active", date: new Date().toISOString().split('T')[0] }]);
-        }
+      // Update the temporary loan with the real one from API
+      if (createdLoan) {
+        setLoans(prevLoans => 
+          prevLoans.map(l => 
+            (l.id === tempId || l._id === tempId) ? createdLoan : l
+          )
+        );
       }
       
-      setAmount("");
-      setCustomer("");
-      setInterestRate("");
-      setTerm("");
-      setShowForm(false);
       alert("Loan added successfully!");
     } catch (error) {
       console.error("Failed to create loan", error);
+      // Revert the optimistic update on failure
+      setLoans(currentLoans);
       alert("Failed to create loan. Please try again.");
     }
   };
@@ -242,9 +237,14 @@ export default function Loans() {
             </thead>
             <tbody>
   {safeLoans.length > 0 ? (
-    safeLoans.map((l) => (
-      <tr key={l.id || l._id}>
-        <td>{l.id || l._id || "N/A"}</td>
+    safeLoans.map((l, index) => {
+      // Show sequential number (1, 2, 3...) instead of ID
+      const displayNumber = index + 1;
+      const loanId = l.id || l._id || index;
+      
+      return (
+      <tr key={loanId}>
+        <td>{displayNumber}</td>
         <td>{l.customer || "N/A"}</td>
         <td>${(l.amount || 0).toLocaleString()}</td>
         <td>{l.interestRate ? `${l.interestRate}%` : "N/A"}</td>
@@ -256,7 +256,8 @@ export default function Loans() {
         </td>
         <td>{l.date || "N/A"}</td>
       </tr>
-    ))
+      );
+    })
   ) : (
     <tr>
       <td colSpan="7" style={{ textAlign: "center", padding: "2rem", color: "#999" }}>
