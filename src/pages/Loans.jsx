@@ -19,7 +19,14 @@ export default function Loans() {
         if (res && res.ok) {
           try {
             const json = await res.json();
-            setLoans(Array.isArray(json) ? json : initialLoans);
+            // Only update if we got valid array data, otherwise keep mock data
+            if (Array.isArray(json) && json.length > 0) {
+              setLoans(json);
+            } else {
+              // API returned empty array or invalid data, keep mock data
+              console.log("API returned empty or invalid data, using mock data");
+              setLoans(initialLoans);
+            }
           } catch (parseErr) {
             console.error("Failed to parse loans response", parseErr);
             setLoans(initialLoans);

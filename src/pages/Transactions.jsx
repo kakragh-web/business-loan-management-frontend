@@ -13,7 +13,14 @@ export default function Transactions() {
         if (res && res.ok) {
           try {
             const json = await res.json();
-            setTransactions(Array.isArray(json) ? json : initialTransactions);
+            // Only update if we got valid array data, otherwise keep mock data
+            if (Array.isArray(json) && json.length > 0) {
+              setTransactions(json);
+            } else {
+              // API returned empty array or invalid data, keep mock data
+              console.log("API returned empty or invalid data, using mock data");
+              setTransactions(initialTransactions);
+            }
           } catch (parseErr) {
             console.error("Failed to parse transactions response", parseErr);
             setTransactions(initialTransactions);

@@ -20,7 +20,14 @@ export default function Customers() {
         if (res && res.ok) {
           try {
             const json = await res.json();
-            setCustomers(Array.isArray(json) ? json : initialCustomers);
+            // Only update if we got valid array data, otherwise keep mock data
+            if (Array.isArray(json) && json.length > 0) {
+              setCustomers(json);
+            } else {
+              // API returned empty array or invalid data, keep mock data
+              console.log("API returned empty or invalid data, using mock data");
+              setCustomers(initialCustomers);
+            }
           } catch (parseErr) {
             console.error("Failed to parse customers response", parseErr);
             setCustomers(initialCustomers);
