@@ -4,7 +4,8 @@ import { api } from "../services/api";
 import { isAdmin } from "../utils/auth";
 
 export default function Customers() {
-  const [customers, setCustomers] = useState(initialCustomers);
+  // Ensure initial state is always an array
+  const [customers, setCustomers] = useState(Array.isArray(initialCustomers) ? initialCustomers : []);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -171,6 +172,9 @@ export default function Customers() {
     }
   };
 
+  // Ensure customers is always an array - use this everywhere instead of customers directly
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+
   return (
     <div className="page-container">
       <div className="page-header" style={{ 
@@ -268,8 +272,8 @@ export default function Customers() {
               </tr>
             </thead>
             <tbody>
-              {(Array.isArray(customers) ? customers : []).length > 0 ? (
-                (Array.isArray(customers) ? customers : []).map((c) => (
+              {safeCustomers.length > 0 ? (
+                safeCustomers.map((c) => (
                   <tr key={c.id || c._id}>
                     <td>{c.id || c._id || "N/A"}</td>
                     <td>{c.name || "N/A"}</td>
