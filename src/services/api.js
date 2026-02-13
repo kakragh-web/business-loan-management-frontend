@@ -60,6 +60,19 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  updateLoan: async (id, data) =>
+    fetch(`${API_URL}/loans/${id}`, {
+      method: "PUT",
+      headers: authHeader(),
+      body: JSON.stringify(data),
+    }),
+
+  deleteLoan: async (id) =>
+    fetch(`${API_URL}/loans/${id}`, {
+      method: "DELETE",
+      headers: authHeader(),
+    }),
+
   getTransactions: async () =>
     fetch(`${API_URL}/transactions`, { headers: authHeader() }),
 };

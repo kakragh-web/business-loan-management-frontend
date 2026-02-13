@@ -9,7 +9,9 @@ export default function Loans() {
   const [customer, setCustomer] = useState("");
   const [interestRate, setInterestRate] = useState("");
   const [term, setTerm] = useState("");
+  const [status, setStatus] = useState("Active");
   const [showForm, setShowForm] = useState(false);
+  const [editingLoan, setEditingLoan] = useState(null);
 
   useEffect(() => {
     const loadLoans = async () => {
@@ -75,8 +77,14 @@ export default function Loans() {
   const addLoan = async (e) => {
     e.preventDefault();
 
+    if (editingLoan) {
+      // Update existing loan
+      updateLoan(e);
+      return;
+    }
+
     const newLoan = {
-      customer,
+      customer: customer.trim(),
       amount: Number(amount),
       interestRate: Number(interestRate),
       term: Number(term),
@@ -96,6 +104,7 @@ export default function Loans() {
     setCustomer("");
     setInterestRate("");
     setTerm("");
+    setStatus("Active");
     setShowForm(false);
 
     try {
@@ -138,21 +147,146 @@ export default function Loans() {
     }
   };
 
+  const startEdit = (loan) => {
+    setEditingLoan(loan);
+    setCustomer(loan.customer || "");
+    setAmount(loan.amount?.toString() || "");
+    setInterestRate(loan.interestRate?.toString() || "");
+    setTerm(loan.term?.toString() || "");
+    setStatus(loan.status || "Active");
+    setShowForm(false);
+  };
+
+  const cancelEdit = () => {
+    setEditingLoan(null);
+    setAmount("");
+    setCustomer("");
+    setInterestRate("");
+    setTerm("");
+    setStatus("Active");
+  };
+
+  const updateLoan = async (e) => {
+    e.preventDefault();
+
+    if (!editingLoan) return;
+
+    const updatedData = {
+      customer: customer.trim(),
+      amount: Number(amount),
+      interestRate: Number(interestRate),
+      term: Number(term),
+      status: status,
+      date: editingLoan.date || new Date().toISOString().split('T')[0],
+    };
+
+    // Optimistically update the loan in the list
+    setLoans(prevLoans =>
+      prevLoans.map(l =>
+        (l._id || l.id) === (editingLoan._id || editingLoan.id)
+          ? { ...l, ...updatedData }
+          : l
+      )
+    );
+
+    try {
+      const updateRes = await api.updateLoan(editingLoan._id || editingLoan.id, updatedData);
+      
+      if (!updateRes || !updateRes.ok) {
+        // Revert on failure
+        setLoans(prevLoans =>
+          prevLoans.map(l =>
+            (l._id || l.id) === (editingLoan._id || editingLoan.id)
+              ? editingLoan
+              : l
+          )
+        );
+        alert("Failed to update loan. Please try again.");
+        return;
+      }
+
+      // Try to get updated loan from response
+      try {
+        const updatedLoan = await updateRes.json();
+        if (updatedLoan) {
+          setLoans(prevLoans =>
+            prevLoans.map(l =>
+              (l._id || l.id) === (editingLoan._id || editingLoan.id)
+                ? updatedLoan
+                : l
+            )
+          );
+        }
+      } catch (e) {
+        // Response might not have JSON, that's okay
+      }
+
+      cancelEdit();
+      alert("Loan updated successfully!");
+    } catch (error) {
+      console.error("Failed to update loan", error);
+      // Revert on failure
+      setLoans(prevLoans =>
+        prevLoans.map(l =>
+          (l._id || l.id) === (editingLoan._id || editingLoan.id)
+            ? editingLoan
+            : l
+        )
+      );
+      alert("Failed to update loan. Please try again.");
+    }
+  };
+
+  const deleteLoan = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this loan?")) return;
+
+    const loanToDelete = loans.find(l => (l._id || l.id) === id);
+    if (!loanToDelete) return;
+
+    // Optimistically remove from list
+    setLoans(prevLoans => prevLoans.filter(l => (l._id || l.id) !== id));
+
+    try {
+      const deleteRes = await api.deleteLoan(id);
+      
+      if (!deleteRes || !deleteRes.ok) {
+        // Revert on failure
+        setLoans(prevLoans => [...prevLoans, loanToDelete].sort((a, b) => (a.id || a._id) - (b.id || b._id)));
+        alert("Failed to delete loan. Please try again.");
+        return;
+      }
+
+      alert("Loan deleted successfully!");
+    } catch (error) {
+      console.error("Failed to delete loan", error);
+      // Revert on failure
+      setLoans(prevLoans => [...prevLoans, loanToDelete].sort((a, b) => (a.id || a._id) - (b.id || b._id)));
+      alert("Failed to delete loan. Please try again.");
+    }
+  };
+
   const safeLoans = Array.isArray(loans) ? loans : [];
 
   return (
     <div className="page-container">
-      <div className="page-header">
+      <div className="page-header" style={{ 
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: "1rem"
+      }}>
         <h2>Loans</h2>
-        {isAdmin() && (
+        {isAdmin() && !editingLoan && (
           <button className="btn-primary" onClick={() => setShowForm(!showForm)}>
             <i className="fas fa-plus"></i> Create Loan
           </button>
         )}
       </div>
 
-      {showForm && (
+      {(showForm || editingLoan) && (
         <div className="form-card">
+          <h3>{editingLoan ? "Edit Loan" : "Create New Loan"}</h3>
           <form onSubmit={addLoan}>
             <div className="form-row">
               <div className="input-group">
@@ -206,12 +340,32 @@ export default function Loans() {
                 />
               </div>
             </div>
+            {editingLoan && (
+              <div className="input-group">
+                <label>Status</label>
+                <select
+                  id="loan-status"
+                  name="status"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  required
+                >
+                  <option value="Active">Active</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Pending">Pending</option>
+                </select>
+              </div>
+            )}
             <div className="form-actions">
-              <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={editingLoan ? cancelEdit : () => setShowForm(false)}
+              >
                 Cancel
               </button>
               <button type="submit" className="btn-primary">
-                Create Loan
+                {editingLoan ? "Update Loan" : "Create Loan"}
               </button>
             </div>
           </form>
@@ -233,6 +387,7 @@ export default function Loans() {
                 <th>Term</th>
                 <th>Status</th>
                 <th>Date</th>
+                {isAdmin() && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -250,17 +405,39 @@ export default function Loans() {
         <td>{l.interestRate ? `${l.interestRate}%` : "N/A"}</td>
         <td>{l.term ? `${l.term} months` : "N/A"}</td>
         <td>
-          <span className={`status-badge ${(l.status || "").toLowerCase()}`}>
-            {l.status || "N/A"}
+          <span className={`status-badge ${(l.status || "Active").toLowerCase()}`}>
+            {l.status || "Active"}
           </span>
         </td>
-        <td>{l.date || "N/A"}</td>
+        <td>{l.date || new Date().toISOString().split('T')[0]}</td>
+        {isAdmin() && (
+          <td>
+            <div className="action-buttons">
+              <button
+                className="btn-edit"
+                onClick={() => startEdit(l)}
+                title="Edit Loan"
+              >
+                <i className="fas fa-edit"></i>
+                <span>Edit</span>
+              </button>
+              <button
+                className="btn-delete"
+                onClick={() => deleteLoan(l._id || l.id)}
+                title="Delete Loan"
+              >
+                <i className="fas fa-trash"></i>
+                <span>Delete</span>
+              </button>
+            </div>
+          </td>
+        )}
       </tr>
       );
     })
   ) : (
     <tr>
-      <td colSpan="7" style={{ textAlign: "center", padding: "2rem", color: "#999" }}>
+      <td colSpan={isAdmin() ? 8 : 7} style={{ textAlign: "center", padding: "2rem", color: "#999" }}>
         No loans found
       </td>
     </tr>
