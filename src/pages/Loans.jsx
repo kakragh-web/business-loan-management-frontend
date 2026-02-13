@@ -145,30 +145,30 @@ export default function Loans() {
               </tr>
             </thead>
             <tbody>
-              {safeLoans.length > 0 ? (
-                safeLoans.map((l) => (
-                  <tr key={l.id || l._id}>
-                    <td>{l.id || l._id || "N/A"}</td>
-                    <td>{l.customer || "N/A"}</td>
-                    <td>${(l.amount || 0).toLocaleString()}</td>
-                    <td>{l.interestRate ? `${l.interestRate}%` : "N/A"}</td>
-                    <td>{l.term ? `${l.term} months` : "N/A"}</td>
-                    <td>
-                      <span className={`status-badge ${(l.status || "").toLowerCase()}`}>
-                        {l.status || "N/A"}
-                      </span>
-                    </td>
-                    <td>{l.date || "N/A"}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: "center", padding: "2rem", color: "#999" }}>
-                    No loans found
-                  </td>
-                </tr>
-              )}
-            </tbody>
+  {safeLoans.length > 0 ? (
+    safeLoans.map((l) => (
+      <tr key={l.id || l._id}>
+        <td>{l.id || l._id || "N/A"}</td>
+        <td>{l.customer || "N/A"}</td>
+        <td>${(l.amount || 0).toLocaleString()}</td>
+        <td>{l.interestRate ? `${l.interestRate}%` : "N/A"}</td>
+        <td>{l.term ? `${l.term} months` : "N/A"}</td>
+        <td>
+          <span className={`status-badge ${(l.status || "").toLowerCase()}`}>
+            {l.status || "N/A"}
+          </span>
+        </td>
+        <td>{l.date || "N/A"}</td>
+      </tr>
+    ))
+  ) : (
+    <tr>
+      <td colSpan="7" style={{ textAlign: "center", padding: "2rem", color: "#999" }}>
+        No loans found
+      </td>
+    </tr>
+  )}
+</tbody>
           </table>
         </div>
       </div>

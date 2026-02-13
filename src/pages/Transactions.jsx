@@ -6,11 +6,27 @@ export default function Transactions() {
   const [transactions, setTransactions] = useState(initialTransactions);
 
   useEffect(() => {
-    api.getTransactions()
-      .then(res => res.json())
-      .then(setTransactions)
-      .catch(err => console.error("Failed to fetch transactions", err));
+    const loadTransactions = async () => {
+      try {
+        const res = await api.getTransactions().catch(() => null);
+
+        if (res && res.ok) {
+          const json = await res.json();
+          setTransactions(Array.isArray(json) ? json : initialTransactions);
+        } else {
+          // 401 or any error → use mock data
+          setTransactions(initialTransactions);
+        }
+      } catch (err) {
+        console.error("Failed to fetch transactions, using mock data", err);
+        setTransactions(initialTransactions);
+      }
+    };
+
+    loadTransactions();
   }, []);
+
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
 
   return (
     <div className="page-container">
@@ -35,8 +51,8 @@ export default function Transactions() {
               </tr>
             </thead>
             <tbody>
-              {(Array.isArray(transactions) ? transactions : []).length > 0 ? (
-                (Array.isArray(transactions) ? transactions : []).map((t) => (
+              {safeTransactions.length > 0 ? (
+                safeTransactions.map((t) => (
                   <tr key={t.id || t._id}>
                     <td>{t.id || t._id || "N/A"}</td>
                     <td>{t.loanId || "N/A"}</td>
